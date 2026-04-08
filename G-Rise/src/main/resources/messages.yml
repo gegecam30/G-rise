@@ -1,0 +1,141 @@
+# ============================================================
+#   G-Rise - Language File: en_US
+#   Translate this file to support other languages.
+#   Color codes: Use '&' followed by a color code.
+#   Supported placeholders are noted per message.
+# ============================================================
+
+prefix: "&8[&bG-Rise&8] &r"
+
+# ============================================================
+# GENERAL
+# ============================================================
+general:
+  no-permission: "&cYou don't have permission to do that."
+  player-only: "&cThis command can only be run by a player."
+  unknown-command: "&cUnknown subcommand. Use &e/gr help &cfor a list of commands."
+  plugin-reloaded: "&aPlugin configuration reloaded successfully."
+  invalid-number: "&cInvalid number: &e{value}&c."
+
+# ============================================================
+# ARENA MANAGEMENT
+# ============================================================
+arena:
+  not-found: "&cArena &e{arena} &cwas not found."
+  already-exists: "&cAn arena named &e{arena} &calready exists."
+  created: "&aArena &e{arena} &acreated successfully."
+  deleted: "&aArena &e{arena} &adeleted."
+  saved: "&aArena &e{arena} &asaved."
+  list-header: "&8&m-----------&r &bArenas &8&m-----------"
+  list-entry: "  &7- &e{arena} &7| Radius: &f{radius} &7| Goal Y: &f{goal_y}"
+  list-empty: "&7No arenas have been configured yet."
+  set-spawn: "&aSpawn point for arena &e{arena} &aset to your location."
+  set-goal-y: "&aGoal Y for arena &e{arena} &aset to &e{y}&a."
+  set-radius: "&aRadius for arena &e{arena} &aset to &e{radius}&a."
+  set-entity: "&aTarget entity for arena &e{arena} &aset to &e{entity}&a."
+  invalid-entity: "&cInvalid entity type: &e{entity}&c. Use a valid Minecraft entity name."
+  set-glow: "&aGlow enabled for arena &e{arena} &awith color RGB(&e{r}&a, &e{g}&a, &e{b}&a)."
+  invalid-glow-color: "&cInvalid color. Use three integers 0-255: &e/gr admin setglow <arena> <r> <g> <b>"
+  removed-glow: "&aGlow disabled for arena &e{arena}&a."
+  preview-started: "&7Showing arena preview for &e10 seconds&7. &8(cyan = border, gold = goal)"
+  in-game: "&cArena &e{arena} &cis currently in use. Try again later."
+
+# ============================================================
+# GAME FLOW
+# ============================================================
+game:
+  # Countdown shown as Title
+  countdown-title: "&c{seconds}"
+  countdown-subtitle: "&7Get ready..."
+  go-title: "&a&lGO!"
+  go-subtitle: "&7Climb to the top!"
+
+  # Game start/end
+  started: "&aThe game has started! Climb to Y &e{goal_y}&a!"
+  player-joined: "&e{player} &7has joined the arena &e({current}/{max})&7."
+  player-left: "&e{player} &7has left the game."
+  player-left-self: "&aYou have left the game. See you next time!"
+  not-in-game: "&cYou are not currently in a game."
+  already-in-game: "&cYou are already in a game."
+  arena-full: "&cArena &e{arena} &cis full &7({max} players)&7."
+
+  # Winning
+  win-title: "&6&lYOU WIN!"
+  win-subtitle: "&eFinished in &f{time}&e!"
+  win-broadcast: "&6{player} &ehas completed &b{arena} &ein &f{time}&e! &7({difficulty})"
+  race-win-broadcast: "&6{player} &ewon the race in &b{arena}&e! Time: &f{time}"
+
+  # Falling / Checkpoint
+  fell-reset: "&cYou fell! Teleporting to your last checkpoint."
+  fell-reset-start: "&cYou fell! Teleporting to the start."
+  rescue-levitation: "&bHang on! &7Levitation rescue activated."
+  hard-fell-eliminated: "&4&lYou fell! &cYou have been eliminated and sent back to the lobby."
+
+  # Difficulty
+  difficulty-set: "&aDifficulty set to &e{difficulty}&a."
+  invalid-difficulty: "&cInvalid difficulty. Options: &eEasy&c, &eMedium&c, &eHard&c."
+
+  # Multiplayer
+  waiting-for-players: "&7Waiting for players... &e{current}/{min} &7needed to start."
+  game-starting-soon: "&aGame starting in &e{seconds} &aseconds!"
+  not-enough-players: "&cNot enough players to start the game."
+
+# ============================================================
+# MACE / COMBO
+# ============================================================
+mace:
+  wrong-tool: "&cYou must use a &bMace &cwith &dWind Burst &cto play!"
+  hit-registered: "&7Hit! &eCombo x{combo}"
+  invalid-target: "&cThat entity is not a valid G-Rise target."
+
+# ============================================================
+# COMMANDS HELP
+# ============================================================
+help:
+  header: "&8&m-----------&r &bG-Rise Help &8&m-----------"
+  footer: "&8&m-----------------------------------------"
+  entries:
+    - "&e/gr play <arena> &8- &7Join an arena (Solo - Easy)."
+    - "&e/gr play <arena> <difficulty> &8- &7Join with a difficulty."
+    - "&e/gr race <arena> &8- &7Join the multiplayer race queue."
+    - "&e/gr leave &8- &7Leave your current game."
+    - "&e/gr stats [player] &8- &7View your or another player's stats."
+    - "&e/gr top <difficulty> &8- &7Show the leaderboard."
+    - "&e/gr admin &8- &7Admin subcommands (requires permission)."
+
+  admin-entries:
+    - "&e/gr admin create <name> &8- &7Create a new arena."
+    - "&e/gr admin delete <name> &8- &7Delete an arena."
+    - "&e/gr admin setspawn <name> &8- &7Set the arena spawn to your location."
+    - "&e/gr admin setgoal <name> <y> &8- &7Set the winning Y for an arena."
+    - "&e/gr admin setradius <name> <radius> &8- &7Set the play radius."
+    - "&e/gr admin list &8- &7List all arenas."
+    - "&e/gr admin reload &8- &7Reload the plugin config."
+
+# ============================================================
+# STATS
+# ============================================================
+stats:
+  header: "&8&m-------&r &bStats: &e{player} &8&m-------"
+  games-played: "&7Games Played: &f{games}"
+  wins: "&7Wins: &f{wins}"
+  best-easy: "&7Best Time (Easy): &f{time}"
+  best-medium: "&7Best Time (Medium): &f{time}"
+  best-hard: "&7Best Time (Hard): &f{time}"
+  no-record: "&7No record yet."
+  player-not-found: "&cPlayer &e{player} &cnot found in the database."
+
+# ============================================================
+# LEADERBOARD
+# ============================================================
+leaderboard:
+  header: "&8&m----&r &bTop {count} - &e{difficulty} &8&m----"
+  entry: "  &7{rank}. &e{player} &8| &f{time}"
+  empty: "&7No records yet for this difficulty."
+
+# ============================================================
+# PLACEHOLDERAPI
+# ============================================================
+placeholders:
+  no-record: "No Record"
+  not-playing: "Not Playing"

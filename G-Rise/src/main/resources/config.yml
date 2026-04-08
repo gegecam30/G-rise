@@ -1,0 +1,242 @@
+# ============================================================
+#   G-Rise Plugin - Main Configuration
+#   Plugin by Gexel | Paper 1.21+
+# ============================================================
+
+# ============================================================
+# SECTION 1: DATABASE
+# ============================================================
+database:
+  # Storage type: "sqlite" (file-based, no setup needed) or "mysql"
+  type: sqlite
+
+  # SQLite settings (used when type is "sqlite")
+  sqlite:
+    # File name inside the plugin's data folder
+    file-name: grise_data.db
+
+  # MySQL settings (used when type is "mysql")
+  mysql:
+    host: localhost
+    port: 3306
+    database: grise
+    username: root
+    password: changeme
+    # Connection pool size (HikariCP)
+    pool-size: 5
+    # Connection timeout in milliseconds
+    connection-timeout: 30000
+    # Use SSL for the connection
+    use-ssl: false
+
+# ============================================================
+# SECTION 2: GAME MECHANICS
+# ============================================================
+game:
+  # Time in seconds before each game starts (countdown)
+  countdown-seconds: 3
+
+  # Maximum players allowed per arena in multiplayer mode
+  max-players-per-arena: 8
+
+  # Minimum players to start a multiplayer race
+  min-players-multiplayer: 2
+
+  # Seconds to wait for players before force-starting (0 = disabled)
+  lobby-wait-timeout: 60
+
+  # Apply velocity boost to all players at game start ("GO!" moment)
+  # Fall-watch safety net: seconds of inactivity (no hits) before rescuing a
+  # stuck player. Easy = levitation rescue, Medium/Hard = checkpoint reset.
+  # Set to 0 to disable.
+  fall-watch-timeout-ticks: 100
+
+  start-boost:
+    enabled: true
+    # Y-axis velocity applied at the start
+    velocity-y: 1.5
+    # Levitation effect duration at start (ticks, 20 ticks = 1 second)
+    levitation-ticks: 100
+    # Levitation amplifier (0 = level I, 1 = level II)
+    levitation-amplifier: 2
+
+# ============================================================
+# SECTION 3: DIFFICULTY SETTINGS
+# ============================================================
+difficulty:
+
+  easy:
+    # Entities are immortal and always visible
+    entities-immortal: true
+    entities-always-visible: true
+    # Teleport to start if player falls to floor
+    teleport-on-fall: false
+
+  medium:
+    # Entities die in one hit
+    entities-immortal: false
+    entities-always-visible: true
+    # Teleport to last checkpoint (or start) when player touches the floor
+    teleport-on-fall: true
+    # How many Mace hits an entity takes before dying.
+    # Higher = more forgiving and more visible platforms.
+    hits-per-entity: 5
+
+  hard:
+    # Entities are immortal but only visible briefly
+    entities-immortal: true
+    entities-always-visible: false
+    # How long (ticks) each wave stays visible (20 = 1s). Keep short for challenge.
+    entity-visible-ticks: 40
+    # How often (ticks) a new wave is revealed. 60 = 3 seconds.
+    wave-interval-ticks: 60
+    # How many entities are revealed per wave (closest to the player's height).
+    wave-size: 3
+    # Chain mode: only one entity is visible at a time. The next one only
+    # appears after the player hits the current one. More intense, less random.
+    # Set to true to enable. The wave system is used when this is false.
+    chain-mode: false
+    # Sound played when a wave appears
+    spawn-sound: BLOCK_DISPENSER_LAUNCH
+    spawn-sound-volume: 1.0
+    spawn-sound-pitch: 1.4
+    # Teleport on fall (same as medium)
+    teleport-on-fall: true
+
+# ============================================================
+# SECTION 4: ENTITY / TARGET SPAWNING
+# ============================================================
+spawning:
+  # Entity type to use as targets. Must be a valid EntityType name.
+  # Recommended: WARDEN, SLIME (they are large and satisfying to hit)
+  entity-type: WARDEN
+
+  # Hard cap on how many entities are pre-spawned at game start.
+  # Lower = cleaner arena, higher = more targets visible at once.
+  # The game does NOT spawn more mid-run; this is the full set.
+  max-initial-entities: 12
+
+  # Controlled-random generation rules
+  generation:
+    # Minimum Y offset above the previous entity
+    min-y-offset: 3
+    # Maximum Y offset above the previous entity
+    max-y-offset: 6
+    # Maximum horizontal (X/Z) offset from the previous entity
+    max-horizontal-offset: 3
+    # Minimum horizontal offset to avoid spawning directly below
+    min-horizontal-offset: 1
+
+  # Metadata tag applied to all G-Rise target entities
+  # Do NOT change this unless you know what you are doing.
+  metadata-key: GRiseTarget
+
+  # In multiplayer mode, how many times an entity can be hit before dying
+  multiplayer-entity-health: 5
+
+# ============================================================
+# SECTION 5: MACE / COMBO MECHANICS
+# ============================================================
+mace:
+  # Extra velocity multiplier applied to the Wind Burst launch
+  # 1.0 = vanilla behavior, higher = more powerful
+  wind-burst-multiplier: 1.2
+
+  # Play an ascending pitch sound on consecutive successful hits (combo)
+  combo-sound-enabled: true
+  combo-sound: ENTITY_PLAYER_ATTACK_SWEEP
+  # Pitch increases with each combo hit (base pitch + combo * step)
+  combo-sound-base-pitch: 0.8
+  combo-sound-pitch-step: 0.15
+  # Maximum combo count for pitch calculation (prevents too-high pitch)
+  combo-max-for-pitch: 10
+
+# ============================================================
+# SECTION 6: ARENA DEFAULTS
+# ============================================================
+arena:
+  # Default floor Y level of arenas (can be overridden per-arena)
+  default-floor-y: 64
+  # Default target height Y to win (can be overridden per-arena)
+  default-goal-y: 164
+  # Default horizontal play radius (blocks from center)
+  default-radius: 8
+  # Particle effect shown at the goal height
+  goal-particle: TOTEM
+  # Sound played when a player wins
+  win-sound: UI_TOAST_CHALLENGE_COMPLETE
+  win-sound-volume: 1.0
+  win-sound-pitch: 1.0
+
+# ============================================================
+# SECTION 7: LEADERBOARD & RECORDS
+# ============================================================
+leaderboard:
+  # How many top entries to display per difficulty
+  top-entries: 10
+  # Update interval for cached leaderboards (seconds)
+  cache-refresh-seconds: 300
+
+# ============================================================
+# SECTION 8: MESSAGES
+# ============================================================
+messages:
+  # Language file to use (must exist in /lang/ folder)
+  # Bundled options: en_US
+  language: en_US
+
+# ============================================================
+# SECTION 9: HIT EFFECTS
+# ============================================================
+effects:
+  # Master toggle for all hit visual effects.
+  hit-effects-enabled: true
+
+  # Particle type spawned at the entity on each hit.
+  # Valid values: any Bukkit Particle name (CRIT, EXPLOSION_EMITTER, SWEEP_ATTACK…)
+  # LINK-> https://hub.spigotmc.org/javadocs/spigot/org/bukkit/Particle.html
+  hit-particle: FLAME
+  # How many particles to spawn per hit.
+  hit-particle-count: 12
+
+  # Sound played at the entity location on each hit (separate from the combo sound).
+  # Recommendation: ENTITY_GENERIC_EXPLODE at high pitch = satisfying "pop".
+  hit-sound: ENTITY_GENERIC_EXPLODE
+  hit-sound-volume: 0.6
+  hit-sound-pitch: 1.8
+
+# ============================================================
+# SECTION 10: COMBO REWARDS
+# ============================================================
+rewards:
+  # Master toggle. Set to true to enable milestone rewards.
+  enabled: false
+
+  # Milestones: keyed by the combo number that triggers each reward.
+  # Each milestone can have:
+  #   title:    Title text shown to the player (&-codes supported).
+  #   subtitle: Subtitle below the title.
+  #   command:  Console command to run. Use %player% for the player name.
+  #             Leave empty ("") to show only the title with no command.
+  #
+  # Example commands:
+  #   "give %player% diamond 1"
+  #   "eco give %player% 500"
+  #   "crate give %player% legendary 1"
+  milestones:
+    5:
+      title: "&e&lCOMBO x5!"
+      subtitle: "&7Nice streak!"
+      command: ""
+    10:
+      title: "&6&lCOMBO x10!"
+      subtitle: "&eYou're on fire!"
+      command: ""
+    25:
+      title: "&c&lCOMBO x25!"
+      subtitle: "&4Unstoppable!"
+      command: "give %player% diamond 1"
+    50:
+      title: "&5&lCOMBO x50!!"
+      subtitle: "&dLEGENDARY STREAK!"
+      command: "give %player% diamond_block 1"
