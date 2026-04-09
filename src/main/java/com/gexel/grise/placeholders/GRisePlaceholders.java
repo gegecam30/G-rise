@@ -1,5 +1,5 @@
 package com.gexel.grise.placeholders;
-
+import com.gexel.grise.arena.Arena;
 import com.gexel.grise.GRisePlugin;
 import com.gexel.grise.arena.GameSession;
 import com.gexel.grise.database.DatabaseManager;

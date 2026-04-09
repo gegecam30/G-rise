@@ -1,5 +1,5 @@
 package com.gexel.grise.listeners;
-
+import com.gexel.grise.arena.Arena;
 import com.gexel.grise.GRisePlugin;
 import com.gexel.grise.arena.Arena;
 import com.gexel.grise.arena.GameSession;
@@ -64,7 +64,10 @@ public class PlayerListener implements Listener {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
             if (!player.isOnline()) return;
             // Update notification.
+          // Primer version lo remuevop para mas adelante ponerlo // plugin.getUpdateChecker().notifyPlayer(player);
+          if (plugin.getUpdateChecker() != null) {
             plugin.getUpdateChecker().notifyPlayer(player);
+}
         }, 60L);
     }
 

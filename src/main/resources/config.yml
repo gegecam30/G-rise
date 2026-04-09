@@ -59,6 +59,9 @@ game:
     levitation-ticks: 100
     # Levitation amplifier (0 = level I, 1 = level II)
     levitation-amplifier: 2
+    
+# Slow Falling duration (ticks) applied when player falls in Medium mode
+  fall-recovery-ticks: 60
 
 # ============================================================
 # SECTION 3: DIFFICULTY SETTINGS

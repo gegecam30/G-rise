@@ -68,6 +68,7 @@ game:
   # Falling / Checkpoint
   fell-reset: "&cYou fell! Teleporting to your last checkpoint."
   fell-reset-start: "&cYou fell! Teleporting to the start."
+  fell-slow-falling: "&eCareful! &7Slow Falling activated — recover your footing."
   rescue-levitation: "&bHang on! &7Levitation rescue activated."
   hard-fell-eliminated: "&4&lYou fell! &cYou have been eliminated and sent back to the lobby."
 

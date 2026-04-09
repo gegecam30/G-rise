@@ -3,8 +3,8 @@ version: '${project.version}'
 main: com.gexel.grise.GRisePlugin
 api-version: '1.21'
 description: A vertical parkour minigame powered by the Mace and Wind Burst enchantment.
-author: Gexel
-website: https://github.com/gexel/g-rise
+author: _gengis
+website: https://github.com/gegecam30/G-rise
 
 softdepend:
   - PlaceholderAPI

@@ -19,12 +19,10 @@
     </properties>
 
     <repositories>
-        <!-- PaperMC Repository -->
         <repository>
             <id>papermc</id>
             <url>https://repo.papermc.io/repository/maven-public/</url>
         </repository>
-        <!-- PlaceholderAPI Repository -->
         <repository>
             <id>placeholderapi</id>
             <url>https://repo.extendedclip.com/content/repositories/placeholderapi/</url>
@@ -32,7 +30,6 @@
     </repositories>
 
     <dependencies>
-        <!-- Paper API 1.21 -->
         <dependency>
             <groupId>io.papermc.paper</groupId>
             <artifactId>paper-api</artifactId>
@@ -40,7 +37,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- PlaceholderAPI (optional / soft-depend) -->
         <dependency>
             <groupId>me.clip</groupId>
             <artifactId>placeholderapi</artifactId>
@@ -50,8 +46,14 @@
     </dependencies>
 
     <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
-            <!-- Compiler: Java 21 with modern API -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -63,7 +65,6 @@
                 </configuration>
             </plugin>
 
-            <!-- Shade: bundle nothing extra, just relocate if needed -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -75,7 +76,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <!-- Exclude signature files that break shaded jars -->
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
@@ -93,7 +93,6 @@
             </plugin>
         </plugins>
 
-        <!-- Output jar name -->
         <finalName>${project.name}-${project.version}</finalName>
     </build>
 </project>

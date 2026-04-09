@@ -82,13 +82,15 @@ public final class GRisePlugin extends JavaPlugin {
         }
 
         // 8. Check for updates asynchronously (result used in PlayerJoinEvent).
+
+        /*  Probando a ver  si es esto
         updateChecker = new UpdateChecker(this);
         updateChecker.checkAsync();
 
         // 9. Show one-time review notification (console + online admins).
         reviewNotifier = new ReviewNotifier(this);
         reviewNotifier.showIfFirstRun();
-
+        */
         getLogger().info("G-Rise v" + getDescription().getVersion() + " enabled successfully!");
     }
 
