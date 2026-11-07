@@ -111,8 +111,9 @@ public class GameSession {
      */
     private final Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
 
-    // nuevo modo 08/04/26
-    private final Map<UUID, org.bukkit.GameMode> savedGameModes = new HashMap<>();
+    /** Saved game modes so players are restored to Creative/Adventure/etc after the game. */
+    private final Map<UUID, GameMode> savedGameModes = new HashMap<>();
+
     /**
      * Players who have already finished (prevent double-win from concurrent
      * PlayerMoveEvent + onValidHit triggers).
@@ -426,10 +427,11 @@ public class GameSession {
 
     /**
      * Prepares a player for gameplay:
-     * saves their inventory, clears it, gives them the G-Rise Mace.
+     * saves their inventory + gamemode, clears it, gives them the G-Rise Mace
+     * and a quick-leave Redstone item in slot 8.
      */
     private void preparePlayer(Player player) {
-        // Guardar gamemode y forzar Survival para que Wind Burst funcione
+        // Force Survival so Wind Burst impulse works consistently.
         savedGameModes.put(player.getUniqueId(), player.getGameMode());
         player.setGameMode(GameMode.SURVIVAL);
 
@@ -440,6 +442,7 @@ public class GameSession {
         player.setSaturation(20f);
         player.getActivePotionEffects().forEach(e -> player.removePotionEffect(e.getType()));
 
+        // --- Save and replace inventory ---
         ItemStack[] saved = new ItemStack[player.getInventory().getSize() + 5];
         ItemStack[] contents = player.getInventory().getContents();
         System.arraycopy(contents, 0, saved, 0, contents.length);
@@ -457,9 +460,13 @@ public class GameSession {
         player.getInventory().setBoots(null);
         player.getInventory().setItemInOffHand(null);
 
-        player.getInventory().setItemInMainHand(buildGriseMace());
+        // Slot 0: G-Rise Mace.
+        player.getInventory().setItem(0, buildGriseMace());
+        // Slot 8 (last hotbar slot): quick-leave Redstone.
+        player.getInventory().setItem(8, buildLeaveItem());
         player.getInventory().setHeldItemSlot(0);
     }
+
     /**
      * Builds the G-Rise Mace: a MACE with Wind Burst I and a custom display name.
      * The item is unbreakable so it survives the session.
@@ -485,6 +492,27 @@ public class GameSession {
     }
 
     /**
+     * Builds a Redstone item used as a quick-leave button (slot 8).
+     * The PlayerInteractEvent in PlayerListener detects this item and runs /gr leave.
+     */
+    private ItemStack buildLeaveItem() {
+        ItemStack redstone = new ItemStack(Material.REDSTONE);
+        ItemMeta meta = redstone.getItemMeta();
+        if (meta != null) {
+            meta.displayName(
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                            .legacyAmpersand().deserialize("&c✖ Leave Game"));
+            meta.setUnbreakable(true);
+            meta.getPersistentDataContainer().set(
+                    new org.bukkit.NamespacedKey(plugin, "grise_leave"),
+                    org.bukkit.persistence.PersistentDataType.BYTE,
+                    (byte) 1);
+            redstone.setItemMeta(meta);
+        }
+        return redstone;
+    }
+
+    /**
      * Applies the velocity + levitation boost at game start.
      */
     private void applyStartBoost(Player player) {
@@ -507,10 +535,11 @@ public class GameSession {
         player.getActivePotionEffects().forEach(e -> player.removePotionEffect(e.getType()));
         player.setVelocity(new org.bukkit.util.Vector(0, 0, 0));
 
-        // Restaurar gamemode original
+        // Restore original game mode (we forced Survival during the game).
         GameMode savedMode = savedGameModes.remove(player.getUniqueId());
         if (savedMode != null) player.setGameMode(savedMode);
 
+        // Restore saved inventory.
         ItemStack[] saved = savedInventories.remove(player.getUniqueId());
         player.getInventory().clear();
         player.getInventory().setHelmet(null);
@@ -529,6 +558,7 @@ public class GameSession {
             if (saved.length > contentsLen + 4) player.getInventory().setItemInOffHand(saved[contentsLen + 4]);
         }
 
+        // Teleport back to the world's main spawn.
         player.teleport(player.getWorld().getSpawnLocation());
     }
 
@@ -682,9 +712,9 @@ public class GameSession {
      * </ul>
      */
     private void scheduleFallWatch() {
-        int timeoutTicks = plugin.getConfig().getInt("game.fall-watch-timeout-ticks", 100);
-        int levTicks     = plugin.getConfig().getInt("game.start-boost.levitation-ticks", 100);
-        int levAmp       = plugin.getConfig().getInt("game.start-boost.levitation-amplifier", 2);
+        int timeoutTicks = plugin.getConfig().getInt("game.fall-watch-timeout-ticks", 60);
+        int levTicks = plugin.getConfig().getInt("game.rescue-levitation-ticks", 40);
+        int levAmp   = plugin.getConfig().getInt("game.rescue-levitation-amplifier", 9);
 
         fallWatchTask = new BukkitRunnable() {
             @Override
@@ -698,50 +728,61 @@ public class GameSession {
 
                     int lastHit  = lastHitTick.getOrDefault(player.getUniqueId(), now - timeoutTicks - 1);
                     int sinceHit = now - lastHit;
-
-                    // Only act if idle for longer than the configured timeout.
                     if (sinceHit < timeoutTicks) continue;
 
                     Location checkpoint = checkpoints.getOrDefault(
                             player.getUniqueId(), arena.getSpawnLocation());
 
-                    // Player must be below their checkpoint to be considered stuck.
+                    // Only rescue if player is BELOW their checkpoint.
                     if (player.getLocation().getY() >= checkpoint.getY()) continue;
 
-                    if (difficulty == Difficulty.EASY) {
-                        // Rescue: give levitation so they can reach the nearest target.
+                    // Only rescue if the player is NOT actively falling
+                    // (velocity.Y < -0.1 means they are mid-fall — leave them alone,
+                    // onPlayerFell will handle it when they reach the floor).
+                    double velY = player.getVelocity().getY();
+                    if (velY < -0.1) continue;
+
+                    // Player is stuck or nearly stationary below the checkpoint.
+                    // Apply rescue based on difficulty.
+                    if (difficulty == Difficulty.EASY || difficulty == Difficulty.MEDIUM) {
+                        if (player.hasPotionEffect(PotionEffectType.LEVITATION)) continue;
                         player.addPotionEffect(new PotionEffect(
                                 PotionEffectType.LEVITATION, levTicks, levAmp, false, false, false));
                         plugin.getMessageUtil().send(player, "game.rescue-levitation");
-                    } else {
-                        // Medium / Hard: checkpoint reset.
+                    } else if (difficulty == Difficulty.HARD) {
                         onPlayerFell(player);
                     }
 
-                    // Reset the timer so we don't spam rescues every 2 seconds.
                     lastHitTick.put(player.getUniqueId(), now);
                 }
             }
-        }.runTaskTimer(plugin, 40L, 40L); // check every 2 seconds
+        }.runTaskTimer(plugin, 20L, 10L);
     }
 
-    /** Applies or removes the invisibility potion effect on a living entity. */
+    /**
+     * Applies or removes the invisibility potion effect on a living entity.
+     *
+     * <p>Glowing is also toggled: when hiding an entity we disable its glow
+     * (otherwise the outline is visible through blocks even when invisible),
+     * and restore the arena's configured glow when revealing it.
+     */
     private void setEntityInvisible(Entity entity, boolean invisible) {
         if (!(entity instanceof LivingEntity living)) return;
-
         if (invisible) {
-            // Desactivar glow antes de aplicar invisibilidad
-            if (arena.isGlowEnabled()) living.setGlowing(false);
-
+            // Hide: apply invisibility AND remove glow so the outline disappears.
             living.addPotionEffect(new PotionEffect(
                     PotionEffectType.INVISIBILITY, Integer.MAX_VALUE, 0, false, false, false));
+            living.setGlowing(false);
         } else {
+            // Reveal: remove invisibility and restore glow only if the arena
+            // has glow enabled (Easy/Medium can keep it; Hard never shows it).
             living.removePotionEffect(PotionEffectType.INVISIBILITY);
-
-            // Restaurar glow si la arena lo tiene configurado
-            if (arena.isGlowEnabled()) living.setGlowing(true);
+            if (arena.isGlowEnabled() && difficulty != Difficulty.HARD) {
+                living.setGlowing(true);
+            }
         }
     }
+
     // -----------------------------------------------------------------------
     // In-game events (called from listeners)
     // -----------------------------------------------------------------------
@@ -949,45 +990,55 @@ public class GameSession {
      *       players continue; in solo the session ends immediately.</li>
      * </ul>
      */
-public void onPlayerFell(Player player) {
-    if (state != SessionState.ACTIVE) return;
-    if (!difficulty.hasFallPenalty()) return;
+    public void onPlayerFell(Player player) {
+        if (state != SessionState.ACTIVE) return;
+        if (!difficulty.hasFallPenalty()) return;
 
-    comboCounts.put(player.getUniqueId(), 0);
-    lastHitTick.put(player.getUniqueId(), plugin.getServer().getCurrentTick());
+        comboCounts.put(player.getUniqueId(), 0);
+        lastHitTick.put(player.getUniqueId(), plugin.getServer().getCurrentTick());
 
-    if (difficulty == Difficulty.HARD) {
-        plugin.getMessageUtil().send(player, "game.hard-fell-eliminated");
-        player.showTitle(net.kyori.adventure.title.Title.title(
-                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                        .legacyAmpersand().deserialize("&c&lELIMINATED"),
-                net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
-                        .legacyAmpersand().deserialize("&7You fell and lost your run."),
-                net.kyori.adventure.title.Title.Times.times(
-                        java.time.Duration.ofMillis(100),
-                        java.time.Duration.ofMillis(2500),
-                        java.time.Duration.ofMillis(500))
-        ));
-        player.playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, 0.7f, 1.5f);
+        if (difficulty == Difficulty.HARD) {
+            // Hard mode: eliminated — go to lobby.
+            plugin.getMessageUtil().send(player, "game.hard-fell-eliminated");
 
-        plugin.getArenaManager().forceRemovePlayer(player);
-        players.remove(player);
-        checkpoints.remove(player.getUniqueId());
-        comboCounts.remove(player.getUniqueId());
-        lastHitTick.remove(player.getUniqueId());
-        lastMilestone.remove(player.getUniqueId());
-        restorePlayerState(player);
+            player.showTitle(net.kyori.adventure.title.Title.title(
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                            .legacyAmpersand().deserialize("&c&lELIMINATED"),
+                    net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
+                            .legacyAmpersand().deserialize("&7You fell and lost your run."),
+                    net.kyori.adventure.title.Title.Times.times(
+                            java.time.Duration.ofMillis(100),
+                            java.time.Duration.ofMillis(2500),
+                            java.time.Duration.ofMillis(500))
+            ));
+            player.playSound(player.getLocation(), Sound.ENTITY_WITHER_DEATH, 0.7f, 1.5f);
 
-        if (players.isEmpty()) endSession(null);
-        return;
+            // Remove from active tracking BEFORE restoring state.
+            // This clears playerSessions so the player can rejoin immediately.
+            plugin.getArenaManager().forceRemovePlayer(player);
+            players.remove(player);
+            checkpoints.remove(player.getUniqueId());
+            comboCounts.remove(player.getUniqueId());
+            lastHitTick.remove(player.getUniqueId());
+            lastMilestone.remove(player.getUniqueId());
+            restorePlayerState(player);
+
+            // If solo (no players left), end the session entirely.
+            if (players.isEmpty()) {
+                endSession(null);
+            }
+            return;
+        }
+
+        // Medium / Easy: apply rescue levitation so the player floats back up.
+        // Amplifier 9 = strong burst upward, short duration so it doesn't carry too far.
+        if (player.hasPotionEffect(PotionEffectType.LEVITATION)) return;
+        int levTicks = plugin.getConfig().getInt("game.rescue-levitation-ticks", 40);
+        int levAmp   = plugin.getConfig().getInt("game.rescue-levitation-amplifier", 9);
+        player.addPotionEffect(new PotionEffect(
+                PotionEffectType.LEVITATION, levTicks, levAmp, false, false, false));
+        plugin.getMessageUtil().send(player, "game.rescue-levitation");
     }
-
-    // Medium: Slow Falling en lugar de TP
-    int slowFallTicks = plugin.getConfig().getInt("game.fall-recovery-ticks", 60);
-    player.addPotionEffect(new PotionEffect(
-            PotionEffectType.LEVITATION, 40, 7, false, false, false));
-    plugin.getMessageUtil().send(player, "game.fell-slow-falling");
-}
 
     /**
      * Records the player's finish time and triggers end-of-session logic.

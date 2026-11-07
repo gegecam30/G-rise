@@ -87,22 +87,36 @@ public class GRiseCommand implements CommandExecutor, TabCompleter {
     // -----------------------------------------------------------------------
 
     private void handlePlay(CommandSender sender, String[] args) {
-        if (!(sender instanceof Player player)) {
-            msg.send(sender, "general.player-only");
-            return;
-        }
-        if (!sender.hasPermission("grise.use")) {
-            msg.send(sender, "general.no-permission");
-            return;
-        }
-
         if (args.length < 2) {
             msg.send(sender, "general.unknown-command");
             return;
         }
 
-        String arenaName  = args[1];
-        Difficulty diff   = args.length >= 3
+        // Resolve which player will join the game.
+        // If sender is a player → they join themselves (original behaviour).
+        // If sender is console/command block → args[3] = target player name (required).
+        Player player;
+        if (sender instanceof Player p) {
+            if (!sender.hasPermission("grise.use")) {
+                msg.send(sender, "general.no-permission");
+                return;
+            }
+            player = p;
+        } else {
+            // Console / NPC sign: /gr play <arena> <difficulty> <player>
+            if (args.length < 4) {
+                sender.sendMessage("[G-Rise] Console usage: /gr play <arena> <difficulty> <player>");
+                return;
+            }
+            player = plugin.getServer().getPlayerExact(args[3]);
+            if (player == null) {
+                sender.sendMessage("[G-Rise] Player '" + args[3] + "' is not online.");
+                return;
+            }
+        }
+
+        String arenaName = args[1];
+        Difficulty diff  = args.length >= 3
                 ? Difficulty.fromString(args[2])
                 : Difficulty.EASY;
 

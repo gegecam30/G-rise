@@ -112,16 +112,38 @@ public class JumpGenerator {
         if (entity instanceof LivingEntity living) {
             living.setAI(false);
             living.setSilent(true);
-            living.setInvulnerable(difficulty.isEntitiesImmortal());
 
-            if (difficulty.isRace()) {
+            // CRITICAL: Never use setInvulnerable(true) — Paper completely
+            // suppresses EntityDamageByEntityEvent for invulnerable entities,
+            // so our MaceListener would never fire when the player hits them.
+            //
+            // Instead, all entities spawn VULNERABLE but with very high HP:
+            //   Easy / Hard  → 1000 HP (effectively immortal, never dies from hits)
+            //   Medium       → uses hits-per-entity system in GameSession
+            //   Race         → configurable multiplayer HP
+            living.setInvulnerable(false);
+
+            if (difficulty.isEntitiesImmortal() && !difficulty.isRace()) {
+                // Easy / Hard: use the Attribute API to set max HP to 1024
+                // (Paper's hard ceiling for setHealth). MaceListener zeros all
+                // incoming damage to 0.0, so entities effectively never die.
+                var maxHpAttr = living.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH);
+                if (maxHpAttr != null) {
+                    maxHpAttr.setBaseValue(1024.0);
+                }
+                living.setHealth(1024.0);
+            } else if (difficulty.isRace()) {
                 int hp = plugin.getConfig().getInt("spawning.multiplayer-entity-health", 5) * 2;
                 living.setMaxHealth(hp);
                 living.setHealth(hp);
             }
+            // Medium: leave default health — GameSession removes entity after hits-per-entity hits.
+
             if (living instanceof Mob mob) mob.setPersistent(true);
 
-            if (arena.isGlowEnabled()) {
+            // Only apply glow for non-Hard difficulties. In Hard mode entities
+            // start invisible and the glow outline would betray their position.
+            if (arena.isGlowEnabled() && !difficulty.isMemoryMode()) {
                 living.setGlowing(true);
                 applyGlowColor(living, arena.getGlowColor());
             }
